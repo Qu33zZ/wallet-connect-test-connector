@@ -1,25 +1,73 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import NodeWalletConnect from "@walletconnect/node";
+import WalletConnectQRCodeModal from "@walletconnect/qrcode-modal";
 
 function App() {
+ 
+// Create connector
+const walletConnector = new NodeWalletConnect(
+  {
+    bridge: "https://bridge.walletconnect.org", // Required
+  },
+  {
+    clientMeta: {
+      description: "Web3Forces Test NodeJS Client",
+      url: "https://nodejs.org/en/",
+      icons: ["https://nodejs.org/static/images/logo.svg"],
+      name: "Web3Forves Connector",
+    },
+  }
+);
+
+// Check if connection is already established
+if (!walletConnector.connected) {
+  // create new session
+  walletConnector.createSession().then(() => {
+    // get uri for QR Code modal
+    const uri = walletConnector.uri;
+    // display QR Code modal
+    WalletConnectQRCodeModal.open(
+      uri,
+      () => {
+        console.log("QR Code Modal closed");
+      }
+    );
+  });
+}
+
+// Subscribe to connection events
+walletConnector.on("connect", (error, payload) => {
+  if (error) {
+    throw error;
+  }
+
+  // Close QR Code Modal
+  WalletConnectQRCodeModal.close();
+
+  // Get provided accounts and chainId
+  const { accounts, chainId } = payload.params[0];
+  console.log(accounts, chainId);
+});
+
+walletConnector.on("session_update", (error, payload) => {
+  if (error) {
+    throw error;
+  }
+
+  // Get updated accounts and chainId
+  const { accounts, chainId } = payload.params[0];
+});
+
+walletConnector.on("disconnect", (error, payload) => {
+  if (error) {
+    throw error;
+  }
+
+  // Delete walletConnector
+});
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <h1>Connect Wallet</h1>
+   
   );
 }
 
